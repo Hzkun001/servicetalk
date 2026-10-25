@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -99,6 +100,19 @@ class HttpRequestUriUtilsTest {
         assertThat(getEffectiveRequestUri(ctx, request, scheme, null, false),
                 is(scheme + "://" + authority + "/resource?query=value"));
         assertThat(getBaseRequestUri(ctx, request, scheme, null, false), is(scheme + "://" + authority + '/'));
+    }
+
+    @ParameterizedTest(name = "{displayName} [{index}]: scheme={0}")
+    @ValueSource(strings = {"http", "https"})
+    void getEffectiveRequestUriOriginFormWithDefaultSchemeUsesAuthority(String scheme) {
+        StreamingHttpRequest request = new DefaultStreamingHttpRequestResponseFactory(
+                BufferAllocators.DEFAULT_ALLOCATOR, DefaultHttpHeadersFactory.INSTANCE, HTTP_1_1, scheme)
+                .get("/hello?foo=bar").setHeader(HOST, "example.com:8443");
+        assertThat(getEffectiveRequestUri(ctx, request, null, null, false),
+                is(scheme + "://example.com:8443/hello?foo=bar"));
+        assertThat(getBaseRequestUri(ctx, request, null, null, false), is(scheme + "://example.com:8443/"));
+        assertThat(getEffectiveRequestUri(request, "http", "proxy.example.com:8080", false),
+                is("http://proxy.example.com:8080/hello?foo=bar"));
     }
 
     @Test
